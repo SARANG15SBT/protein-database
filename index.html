@@ -8,88 +8,97 @@
 </head>
 <body>
 
-<header>
-  <h1>Dark Protein Database</h1>
-  <p>A Synthetic Biology Resource for Engineered Proteins</p>
-</header>
+  <!-- 🔹 Header -->
+  <header>
+    <h1>Dark Protein Database</h1>
+    <p>A Synthetic Biology Resource for Engineered Proteins</p>
+  </header>
 
-<nav class="nav">
-  <a href="index.html">Home</a>
-  <a href="#">Browse Proteins</a>
-  <a href="#">Search</a>
-  <a href="#">Design Methods</a>
-  <a href="#">Publications</a>
-  <a href="contact.html">Contact</a>
-</nav>
+  <!-- 🔹 Navigation -->
+  <nav class="nav">
+    <a href="index.html">Home</a>
+    <a href="#">Browse Proteins</a>
+    <a href="#">Search</a>
+    <a href="#">Design Methods</a>
+    <a href="#">Publications</a>
+    <a href="contact.html">Contact</a>
+  </nav>
 
-<div class="container">
+  <main class="container">
 
-  <!-- 🔎 Search Bar -->
-  <div class="search-bar">
-    <select id="categorySelect">
-  <option value="">--Select Gene Type--</option>
-  <option value="antisense">Antisense</option>
-  <option value="reverse">Reverse</option>
-  <option value="intergenic">Intergenic</option>
-</select>
+    <!-- 🔎 Search Bar -->
+    <section class="search-bar">
+      <label for="categorySelect" class="visually-hidden">Select Gene Type</label>
+      <select id="categorySelect">
+        <option value="">--Select Gene Type--</option>
+        <option value="antisense">Antisense</option>
+        <option value="reverse">Reverse</option>
+        <option value="intergenic">Intergenic</option>
+      </select>
 
-    <input type="text" id="searchInput" placeholder="Search by Protein ID, Symbol, or Organism…">
-    <button onclick="performSearch()">Search</button>
-  </div>
+      <label for="searchInput" class="visually-hidden">Search Input</label>
+      <input type="text" id="searchInput" placeholder="Search by Protein ID, Symbol, or Organism…">
 
-  <!-- ℹ️ Info Section -->
-  <div class="info-section">
-    <div class="info-box">
-      <h3>Explore Proteins</h3>
-      <p>Detailed records including sequences, motifs, structural data, and functional assays of synthetic proteins.</p>
-    </div>
-    <div class="info-box">
-      <h3>Design & Production</h3>
-      <p>Learn about expression systems, vectors, yield profiles, solubility data, and production tags.</p>
-    </div>
-    <div class="info-box">
-      <h3>Search & Filter</h3>
-      <p>Locate proteins by name, gene ID, or design methodology — rational design, directed evolution, or AI-assisted engineering.</p>
-    </div>
-  </div>
+      <button onclick="performSearch()">Search</button>
+    </section>
 
-  <!-- ⭐ Featured Section -->
-  <div class="featured-section">
-    <h2 style="text-align:center; margin-bottom:20px;">Featured Synthetic Proteins</h2>
-    <div class="carousel-container">
-      <div class="carousel-wrapper" id="carouselWrapper"></div>
-      <div class="carousel-controls">
-        <button class="carousel-btn" onclick="prevSlide()">Prev</button>
-        <button class="carousel-btn" onclick="nextSlide()">Next</button>
+    <!-- ℹ️ Info Section -->
+    <section class="info-section">
+      <div class="info-box">
+        <h3>Explore Proteins</h3>
+        <p>Detailed records including sequences, motifs, structural data, and functional assays of synthetic proteins.</p>
       </div>
-    </div>
-  </div>
+      <div class="info-box">
+        <h3>Design & Production</h3>
+        <p>Learn about expression systems, vectors, yield profiles, solubility data, and production tags.</p>
+      </div>
+      <div class="info-box">
+        <h3>Search & Filter</h3>
+        <p>Locate proteins by name, gene ID, or design methodology — rational design, directed evolution, or AI-assisted engineering.</p>
+      </div>
+    </section>
 
-  <!-- 📊 Search Results Table -->
-  <div id="resultsSection">
-    <h2 style="text-align:center; margin-top:30px;">Search Results</h2>
-    <table id="resultsTable">
-      <thead>
-        <tr>
-          <th>Protein ID</th>
-          <th>Symbol</th>
-          <th>Description</th>
-          <th>Organism</th>
-          <th>Gene Type</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+    <!-- ⭐ Featured Section -->
+    <section class="featured-section">
+      <h2 style="text-align:center; margin-bottom:20px;">Featured Synthetic Proteins</h2>
+      <div class="carousel-container">
+        <div class="carousel-wrapper" id="carouselWrapper"></div>
+        <div class="carousel-controls">
+          <button class="carousel-btn" onclick="prevSlide()">Prev</button>
+          <button class="carousel-btn" onclick="nextSlide()">Next</button>
+        </div>
+      </div>
+    </section>
 
-</div>
+    <!-- 📊 Search Results Table -->
+    <section id="resultsSection">
+      <h2 style="text-align:center; margin-top:30px;">Search Results</h2>
+      <table id="resultsTable">
+        <thead>
+          <tr>
+            <th>Protein ID</th>
+            <th>Symbol</th>
+            <th>Description</th>
+            <th>Organism</th>
+            <th>Gene Type</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
 
-<footer>
-  <p>&copy; 2025 Dark Protein Database. All rights reserved. | Designed by YourLabName</p>
-  <p><a href="contact.html">Contact</a> | <a href="#">Privacy Policy</a> | <a href="#">Terms of Use</a></p>
-</footer>
+  </main>
 
-<script src="script.js"></script>
+  <!-- 🔹 Footer -->
+  <footer>
+    <p>&copy; 2025 Dark Protein Database. All rights reserved. | Designed by YourLabName</p>
+    <p>
+      <a href="contact.html">Contact</a> | 
+      <a href="#">Privacy Policy</a> | 
+      <a href="#">Terms of Use</a>
+    </p>
+  </footer>
+
+  <script src="script.js"></script>
 </body>
 </html>
-
