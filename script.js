@@ -3,10 +3,11 @@ let proteinData = [];
 let currentIndex = 0;
 let dataReady = false;
 
+// Safe DOM lookups
 const carouselWrapper = document.getElementById('carouselWrapper');
 
 // -------------------- Helpers --------------------
-const toLower = v => (v ?? '').toString().trim().toLowerCase();
+const lower = v => (v ?? '').toString().trim().toLowerCase();
 
 function normalizeRecord(p) {
   return {
@@ -21,7 +22,6 @@ function normalizeRecord(p) {
 
 function ensureArray(data) {
   if (Array.isArray(data)) return data;
-  // If the JSON returns a single object, wrap it
   if (data && typeof data === 'object') return [data];
   return [];
 }
@@ -36,11 +36,12 @@ fetch(jsonURL)
     proteinData = arr.map(normalizeRecord);
     dataReady = true;
 
-    console.log('Loaded proteins (normalized):', proteinData.length);
-    // Render initial carousel
+    // Initial UI
     renderCarousel(proteinData.slice(0, 3));
-    // Render full table initially (optional)
     renderTable(proteinData);
+
+    // Apply filter from URL if present
+    applyFiltersFromURL();
   })
   .catch(err => {
     console.error('Error loading JSON:', err);
@@ -78,51 +79,72 @@ function prevSlide() {
   renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
 }
 
-// -------------------- Filtering --------------------
-// Filter ONLY by GeneType (dropdown)
+// -------------------- Filtering (case-insensitive) --------------------
 function filterByGeneType() {
-  if (!dataReady) {
-    console.warn('Data not ready yet');
-    return;
-  }
-  const category = toLower(document.getElementById('categorySelect')?.value);
+  if (!dataReady) return;
+  const category = lower(document.getElementById('categorySelect')?.value);
 
   const results = proteinData.filter(p => {
-    const gt = toLower(p.geneType);
+    const gt = lower(p.geneType);
     return category ? gt === category : true;
   });
 
-  console.log('filterByGeneType -> category:', category, 'results:', results.length);
   renderTable(results);
 }
 
-// Combined text search + GeneType filter
 function performSearch() {
-  if (!dataReady) {
-    console.warn('Data not ready yet');
-    return;
-  }
-  const category = toLower(document.getElementById('categorySelect')?.value);
-  const query = toLower(document.getElementById('searchInput')?.value);
+  if (!dataReady) return;
+  const category = lower(document.getElementById('categorySelect')?.value);
+  const query = lower(document.getElementById('searchInput')?.value);
 
   const results = proteinData.filter(p => {
     const matchesQuery = query
       ? (
-          toLower(p.id).includes(query) ||
-          toLower(p.symbol).includes(query) ||
-          toLower(p.description).includes(query) ||
-          toLower(p.taxonomicName).includes(query) ||
-          toLower(p.geneType).includes(query)
+          lower(p.id).includes(query) ||
+          lower(p.symbol).includes(query) ||
+          lower(p.description).includes(query) ||
+          lower(p.taxonomicName).includes(query) ||
+          lower(p.geneType).includes(query)
         )
       : true;
 
-    const matchesCategory = category ? toLower(p.geneType) === category : true;
+    const matchesCategory = category ? lower(p.geneType) === category : true;
 
     return matchesQuery && matchesCategory;
   });
 
-  console.log('performSearch -> category:', category, 'query:', query, 'results:', results.length);
   renderTable(results);
+}
+
+// -------------------- Page reload with query string --------------------
+function reloadWithFilter() {
+  const category = document.getElementById('categorySelect')?.value || '';
+  const query = document.getElementById('searchInput')?.value || '';
+
+  const params = new URLSearchParams();
+  if (category) params.set('geneType', category);
+  if (query) params.set('q', query);
+
+  // Reload the page in the same tab with query string
+  window.location.search = params.toString();
+}
+
+// Apply filters from URL after data is ready
+function applyFiltersFromURL() {
+  const params = new URLSearchParams(window.location.search);
+  const geneType = params.get('geneType') || '';
+  const q = params.get('q') || '';
+
+  // Set UI controls to reflect URL
+  const catEl = document.getElementById('categorySelect');
+  const qEl = document.getElementById('searchInput');
+  if (catEl && geneType) catEl.value = geneType;
+  if (qEl && q) qEl.value = q;
+
+  // If any filter present, perform search
+  if (geneType || q) {
+    performSearch();
+  }
 }
 
 // -------------------- Table rendering --------------------
@@ -153,54 +175,19 @@ function renderTable(results) {
   });
 }
 
-// -------------------- Wire up events safely --------------------
+// -------------------- Wire up events --------------------
 document.addEventListener('DOMContentLoaded', () => {
   const categoryEl = document.getElementById('categorySelect');
   const searchBtn = document.querySelector('.search-bar button');
 
-  // Auto-filter when dropdown changes
+  // Change: dropdown triggers gene-type-only filter without reloading
   if (categoryEl) {
     categoryEl.addEventListener('change', filterByGeneType);
   }
 
-  // Ensure the button also triggers performSearch
+  // Button: reload page with query params
   if (searchBtn) {
-    searchBtn.addEventListener('click', performSearch);
+    searchBtn.removeAttribute('onclick'); // avoid duplicate handlers
+    searchBtn.addEventListener('click', reloadWithFilter);
   }
 });
-function reloadWithFilter() {
-  const category = document.getElementById('categorySelect').value;
-  const query = document.getElementById('searchInput').value;
-
-  // Build query string
-  const params = new URLSearchParams();
-  if (category) params.set('geneType', category);
-  if (query) params.set('q', query);
-
-  // Reload page with query string
-  window.location.search = params.toString();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  const params = new URLSearchParams(window.location.search);
-  const geneType = params.get('geneType');
-  const query = params.get('q');
-
-  if (geneType) {
-    document.getElementById('categorySelect').value = geneType;
-  }
-  if (query) {
-    document.getElementById('searchInput').value = query;
-  }
-
-  // Wait until proteinData is loaded, then filter
-  const checkData = setInterval(() => {
-    if (proteinData.length > 0) {
-      clearInterval(checkData);
-      performSearch(); // reuse your existing search+filter
-    }
-  }, 200);
-});
-
-
-
