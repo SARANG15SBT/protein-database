@@ -28,7 +28,6 @@
 
     <!-- 🔎 Search Bar -->
     <section class="search-bar">
-      <label for="categorySelect" class="visually-hidden">Select Gene Type</label>
       <select id="categorySelect">
         <option value="">--Select Gene Type--</option>
         <option value="antisense">Antisense</option>
@@ -36,9 +35,7 @@
         <option value="intergenic">Intergenic</option>
       </select>
 
-      <label for="searchInput" class="visually-hidden">Search Input</label>
       <input type="text" id="searchInput" placeholder="Search by Protein ID, Symbol, or Organism…">
-
       <button onclick="performSearch()">Search</button>
     </section>
 
