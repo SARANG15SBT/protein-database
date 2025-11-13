@@ -1,9 +1,6 @@
 // -------------------- State --------------------
 let proteinData = [];
-let currentIndex = 0;
 let dataReady = false;
-
-const carouselWrapper = document.getElementById('carouselWrapper');
 
 // -------------------- Helpers --------------------
 const toLower = v => (v ?? '').toString().trim().toLowerCase();
@@ -25,70 +22,6 @@ function ensureArray(data) {
   return [];
 }
 
-// -------------------- Load data --------------------
-const jsonURL = 'https://sarang15sbt.github.io/protein-database/proteins.json';
-
-fetch(jsonURL)
-  .then(res => res.json())
-  .then(data => {
-    const arr = ensureArray(data);
-    proteinData = arr.map(normalizeRecord);
-    dataReady = true;
-
-    console.log('Loaded proteins (normalized):', proteinData.length);
-
-    // Check URL params for search/filter
-    const params = new URLSearchParams(window.location.search);
-    const category = toLower(params.get('category'));
-    const query = toLower(params.get('query'));
-
-    if (category || query) {
-      // Apply filter immediately on load
-      const results = filterResults(category, query);
-      renderTable(results);
-      renderCarousel(results.slice(0, 3));
-    } else {
-      // Default initial render
-      renderCarousel(proteinData.slice(0, 3));
-      renderTable(proteinData);
-    }
-  })
-  .catch(err => {
-    console.error('Error loading JSON:', err);
-  });
-
-// -------------------- Carousel --------------------
-function renderCarousel(items) {
-  if (!carouselWrapper) return;
-  carouselWrapper.innerHTML = '';
-  items.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'protein-card';
-    card.innerHTML = `
-      <h4>${item.id}</h4>
-      <p><strong>Symbol:</strong> ${item.symbol}</p>
-      <p><strong>Description:</strong> ${item.description}</p>
-      <p><strong>Organism:</strong> ${item.taxonomicName}</p>
-      <p><strong>Gene Type:</strong> ${item.geneType}</p>
-    `;
-    carouselWrapper.appendChild(card);
-  });
-}
-
-function nextSlide() {
-  if (!dataReady || proteinData.length === 0) return;
-  currentIndex = (currentIndex + 1) % proteinData.length;
-  const slice = proteinData.slice(currentIndex, currentIndex + 3);
-  renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
-}
-
-function prevSlide() {
-  if (!dataReady || proteinData.length === 0) return;
-  currentIndex = (currentIndex - 1 + proteinData.length) % proteinData.length;
-  const slice = proteinData.slice(currentIndex, currentIndex + 3);
-  renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
-}
-
 // -------------------- Filtering --------------------
 function filterResults(category, query) {
   return proteinData.filter(p => {
@@ -102,28 +35,15 @@ function filterResults(category, query) {
         )
       : true;
 
-    const matchesCategory = category ? toLower(p.geneType) === category : true;
+    const matchesCategory = category ? toLower(p.geneType).includes(category) : true;
     return matchesQuery && matchesCategory;
   });
-}
-
-// Triggered when user clicks search
-function performSearch() {
-  const category = toLower(document.getElementById('categorySelect')?.value);
-  const query = toLower(document.getElementById('searchInput')?.value);
-
-  // Reload page with query params
-  const params = new URLSearchParams({ category, query });
-  window.location.search = params.toString();
 }
 
 // -------------------- Table rendering --------------------
 function renderTable(results) {
   const tbody = document.querySelector('#resultsTable tbody');
-  if (!tbody) {
-    console.error('Table body #resultsTable tbody not found in DOM');
-    return;
-  }
+  if (!tbody) return;
 
   tbody.innerHTML = '';
 
@@ -145,15 +65,53 @@ function renderTable(results) {
   });
 }
 
-// -------------------- Wire up events safely --------------------
+// -------------------- Search trigger --------------------
+function performSearch() {
+  const category = toLower(document.getElementById('categorySelect')?.value);
+  const query = toLower(document.getElementById('searchInput')?.value);
+
+  // Reload page with query params
+  const params = new URLSearchParams();
+  if (category) params.set('category', category);
+  if (query) params.set('query', query);
+
+  window.location.search = params.toString();
+}
+
+// -------------------- Load & boot --------------------
 document.addEventListener('DOMContentLoaded', () => {
   const categoryEl = document.getElementById('categorySelect');
   const searchBtn = document.querySelector('.search-bar button');
 
-  if (categoryEl) {
-    categoryEl.addEventListener('change', performSearch);
-  }
-  if (searchBtn) {
-    searchBtn.addEventListener('click', performSearch);
-  }
+  if (categoryEl) categoryEl.addEventListener('change', performSearch);
+  if (searchBtn) searchBtn.addEventListener('click', performSearch);
+
+  const jsonURL = 'https://sarang15sbt.github.io/protein-database/proteins.json';
+
+  fetch(jsonURL)
+    .then(res => res.json())
+    .then(data => {
+      proteinData = ensureArray(data).map(normalizeRecord);
+      dataReady = true;
+
+      // Read params from URL
+      const params = new URLSearchParams(window.location.search);
+      const category = toLower(params.get('category'));
+      const query = toLower(params.get('query'));
+
+      // Pre-fill inputs
+      if (categoryEl) categoryEl.value = category || '';
+      const searchInput = document.getElementById('searchInput');
+      if (searchInput) searchInput.value = query || '';
+
+      // Filter if params exist, else show all
+      const results = (category || query)
+        ? filterResults(category, query)
+        : proteinData;
+
+      renderTable(results);
+    })
+    .catch(err => {
+      console.error('Error loading JSON:', err);
+    });
 });
