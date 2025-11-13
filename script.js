@@ -4,7 +4,6 @@ let currentIndex = 0;
 const carouselWrapper = document.getElementById('carouselWrapper');
 
 // ✅ Load protein data from JSON file hosted on GitHub Pages
-// Replace with your actual GitHub Pages URL
 const jsonURL = 'https://sarang15sbt.github.io/protein-database/proteins.json';
 
 fetch(jsonURL)
@@ -21,7 +20,6 @@ fetch(jsonURL)
 // ✅ Render carousel dynamically
 function renderCarousel(proteins) {
   carouselWrapper.innerHTML = '';
-
   proteins.forEach(protein => {
     const card = document.createElement('div');
     card.className = 'protein-card';
@@ -51,7 +49,18 @@ function prevSlide() {
   renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
 }
 
-// ✅ Search function with category
+// ✅ Filter function for GeneType only
+function filterByGeneType() {
+  const category = document.getElementById('categorySelect').value.toLowerCase();
+
+  const results = proteinData.filter(protein => {
+    return category ? protein.GeneType.toLowerCase() === category : true;
+  });
+
+  renderTable(results);
+}
+
+// ✅ Combined search + filter
 function performSearch() {
   const category = document.getElementById('categorySelect').value.toLowerCase();
   const query = document.getElementById('searchInput').value.toLowerCase();
@@ -61,8 +70,7 @@ function performSearch() {
       ? (protein["Dark_protein ID"].toLowerCase().includes(query) ||
          protein.ncbi_gene_Symbol.toLowerCase().includes(query) ||
          protein.Description.toLowerCase().includes(query) ||
-         protein.TaxonomicName.toLowerCase().includes(query) ||
-         protein.GeneType.toLowerCase().includes(query))
+         protein.TaxonomicName.toLowerCase().includes(query))
       : true;
 
     const matchesCategory = category
@@ -97,27 +105,3 @@ function renderTable(results) {
     tbody.appendChild(row);
   });
 }
-
-
-
-function renderTable(results) {
-  const tbody = document.querySelector('#resultsTable tbody');
-  tbody.innerHTML = '';
-
-  results.forEach(protein => {
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${protein["Dark_protein ID"]}</td>
-      <td>${protein.ncbi_gene_Symbol}</td>
-      <td>${protein.Description}</td>
-      <td>${protein.TaxonomicName}</td>
-      <td>${protein.GeneType}</td>
-    `;
-    tbody.appendChild(row);
-  });
-}
-
-
-
-
-
