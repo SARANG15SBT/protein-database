@@ -1,49 +1,52 @@
-// Global storage for protein data
+// -------------------- State --------------------
 let proteinData = [];
 let currentIndex = 0;
+let dataReady = false;
 
-// Safe DOM lookups (in case elements are not yet available)
 const carouselWrapper = document.getElementById('carouselWrapper');
 
-// ---------- Helpers ----------
-function safeLower(val) {
-  return (val ?? '').toString().trim().toLowerCase();
-}
-
-function getField(protein, key) {
-  // Handles keys with spaces and different naming
-  // Returns empty string if missing
-  return protein?.[key] ?? '';
-}
+// -------------------- Helpers --------------------
+const toLower = v => (v ?? '').toString().trim().toLowerCase();
 
 function normalizeRecord(p) {
-  // Optionally pre-normalize frequently used fields for speed
   return {
-    id: getField(p, 'Dark_protein ID'),
-    symbol: getField(p, 'ncbi_gene_Symbol'),
-    description: getField(p, 'Description') || getField(p, 'ncbi_gene_Description'),
-    taxonomicName: getField(p, 'TaxonomicName'),
-    geneType: getField(p, 'GeneType'),
+    id: p?.['Dark_protein ID'] ?? '',
+    symbol: p?.['ncbi_gene_Symbol'] ?? '',
+    description: p?.['Description'] ?? p?.['ncbi_gene_Description'] ?? '',
+    taxonomicName: p?.['TaxonomicName'] ?? '',
+    geneType: p?.['GeneType'] ?? '',
     raw: p
   };
 }
 
-// ---------- Load data ----------
+function ensureArray(data) {
+  if (Array.isArray(data)) return data;
+  // If the JSON returns a single object, wrap it
+  if (data && typeof data === 'object') return [data];
+  return [];
+}
+
+// -------------------- Load data --------------------
 const jsonURL = 'https://sarang15sbt.github.io/protein-database/proteins.json';
 
 fetch(jsonURL)
   .then(res => res.json())
   .then(data => {
-    // Keep original but also a normalized view
-    proteinData = Array.isArray(data) ? data.map(normalizeRecord) : [];
-    console.log('Loaded proteins:', proteinData);
+    const arr = ensureArray(data);
+    proteinData = arr.map(normalizeRecord);
+    dataReady = true;
 
-    // Initial carousel
+    console.log('Loaded proteins (normalized):', proteinData.length);
+    // Render initial carousel
     renderCarousel(proteinData.slice(0, 3));
+    // Render full table initially (optional)
+    renderTable(proteinData);
   })
-  .catch(err => console.error('Error loading JSON:', err));
+  .catch(err => {
+    console.error('Error loading JSON:', err);
+  });
 
-// ---------- Carousel ----------
+// -------------------- Carousel --------------------
 function renderCarousel(items) {
   if (!carouselWrapper) return;
   carouselWrapper.innerHTML = '';
@@ -62,65 +65,73 @@ function renderCarousel(items) {
 }
 
 function nextSlide() {
-  if (proteinData.length === 0) return;
+  if (!dataReady || proteinData.length === 0) return;
   currentIndex = (currentIndex + 1) % proteinData.length;
   const slice = proteinData.slice(currentIndex, currentIndex + 3);
   renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
 }
 
 function prevSlide() {
-  if (proteinData.length === 0) return;
+  if (!dataReady || proteinData.length === 0) return;
   currentIndex = (currentIndex - 1 + proteinData.length) % proteinData.length;
   const slice = proteinData.slice(currentIndex, currentIndex + 3);
   renderCarousel(slice.length ? slice : proteinData.slice(0, 3));
 }
 
-// ---------- Filtering ----------
+// -------------------- Filtering --------------------
+// Filter ONLY by GeneType (dropdown)
 function filterByGeneType() {
-  const categoryEl = document.getElementById('categorySelect');
-  const category = safeLower(categoryEl?.value);
+  if (!dataReady) {
+    console.warn('Data not ready yet');
+    return;
+  }
+  const category = toLower(document.getElementById('categorySelect')?.value);
 
-  // Case-insensitive exact match on GeneType
   const results = proteinData.filter(p => {
-    const gt = safeLower(p.geneType);
+    const gt = toLower(p.geneType);
     return category ? gt === category : true;
   });
 
+  console.log('filterByGeneType -> category:', category, 'results:', results.length);
   renderTable(results);
 }
 
+// Combined text search + GeneType filter
 function performSearch() {
-  const categoryEl = document.getElementById('categorySelect');
-  const queryEl = document.getElementById('searchInput');
-
-  const category = safeLower(categoryEl?.value);
-  const query = safeLower(queryEl?.value);
+  if (!dataReady) {
+    console.warn('Data not ready yet');
+    return;
+  }
+  const category = toLower(document.getElementById('categorySelect')?.value);
+  const query = toLower(document.getElementById('searchInput')?.value);
 
   const results = proteinData.filter(p => {
-    // Case-insensitive text query across key fields
     const matchesQuery = query
       ? (
-          safeLower(p.id).includes(query) ||
-          safeLower(p.symbol).includes(query) ||
-          safeLower(p.description).includes(query) ||
-          safeLower(p.taxonomicName).includes(query) ||
-          safeLower(p.geneType).includes(query)
+          toLower(p.id).includes(query) ||
+          toLower(p.symbol).includes(query) ||
+          toLower(p.description).includes(query) ||
+          toLower(p.taxonomicName).includes(query) ||
+          toLower(p.geneType).includes(query)
         )
       : true;
 
-    // Case-insensitive exact match on GeneType if category selected
-    const matchesCategory = category ? safeLower(p.geneType) === category : true;
+    const matchesCategory = category ? toLower(p.geneType) === category : true;
 
     return matchesQuery && matchesCategory;
   });
 
+  console.log('performSearch -> category:', category, 'query:', query, 'results:', results.length);
   renderTable(results);
 }
 
-// ---------- Results table ----------
+// -------------------- Table rendering --------------------
 function renderTable(results) {
   const tbody = document.querySelector('#resultsTable tbody');
-  if (!tbody) return;
+  if (!tbody) {
+    console.error('Table body #resultsTable tbody not found in DOM');
+    return;
+  }
 
   tbody.innerHTML = '';
 
@@ -142,10 +153,18 @@ function renderTable(results) {
   });
 }
 
-// ---------- Optional: auto-filter on dropdown change ----------
+// -------------------- Wire up events safely --------------------
 document.addEventListener('DOMContentLoaded', () => {
   const categoryEl = document.getElementById('categorySelect');
+  const searchBtn = document.querySelector('.search-bar button');
+
+  // Auto-filter when dropdown changes
   if (categoryEl) {
     categoryEl.addEventListener('change', filterByGeneType);
+  }
+
+  // Ensure the button also triggers performSearch
+  if (searchBtn) {
+    searchBtn.addEventListener('click', performSearch);
   }
 });
