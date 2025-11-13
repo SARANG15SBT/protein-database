@@ -21,7 +21,6 @@ function normalizeRecord(p) {
 
 function ensureArray(data) {
   if (Array.isArray(data)) return data;
-  // If the JSON returns a single object, wrap it
   if (data && typeof data === 'object') return [data];
   return [];
 }
@@ -37,10 +36,22 @@ fetch(jsonURL)
     dataReady = true;
 
     console.log('Loaded proteins (normalized):', proteinData.length);
-    // Render initial carousel
-    renderCarousel(proteinData.slice(0, 3));
-    // Render full table initially (optional)
-    renderTable(proteinData);
+
+    // Check URL params for search/filter
+    const params = new URLSearchParams(window.location.search);
+    const category = toLower(params.get('category'));
+    const query = toLower(params.get('query'));
+
+    if (category || query) {
+      // Apply filter immediately on load
+      const results = filterResults(category, query);
+      renderTable(results);
+      renderCarousel(results.slice(0, 3));
+    } else {
+      // Default initial render
+      renderCarousel(proteinData.slice(0, 3));
+      renderTable(proteinData);
+    }
   })
   .catch(err => {
     console.error('Error loading JSON:', err);
@@ -79,33 +90,8 @@ function prevSlide() {
 }
 
 // -------------------- Filtering --------------------
-// Filter ONLY by GeneType (dropdown)
-function filterByGeneType() {
-  if (!dataReady) {
-    console.warn('Data not ready yet');
-    return;
-  }
-  const category = toLower(document.getElementById('categorySelect')?.value);
-
-  const results = proteinData.filter(p => {
-    const gt = toLower(p.geneType);
-    return category ? gt === category : true;
-  });
-
-  console.log('filterByGeneType -> category:', category, 'results:', results.length);
-  renderTable(results);
-}
-
-// Combined text search + GeneType filter
-function performSearch() {
-  if (!dataReady) {
-    console.warn('Data not ready yet');
-    return;
-  }
-  const category = toLower(document.getElementById('categorySelect')?.value);
-  const query = toLower(document.getElementById('searchInput')?.value);
-
-  const results = proteinData.filter(p => {
+function filterResults(category, query) {
+  return proteinData.filter(p => {
     const matchesQuery = query
       ? (
           toLower(p.id).includes(query) ||
@@ -117,12 +103,18 @@ function performSearch() {
       : true;
 
     const matchesCategory = category ? toLower(p.geneType) === category : true;
-
     return matchesQuery && matchesCategory;
   });
+}
 
-  console.log('performSearch -> category:', category, 'query:', query, 'results:', results.length);
-  renderTable(results);
+// Triggered when user clicks search
+function performSearch() {
+  const category = toLower(document.getElementById('categorySelect')?.value);
+  const query = toLower(document.getElementById('searchInput')?.value);
+
+  // Reload page with query params
+  const params = new URLSearchParams({ category, query });
+  window.location.search = params.toString();
 }
 
 // -------------------- Table rendering --------------------
@@ -158,12 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const categoryEl = document.getElementById('categorySelect');
   const searchBtn = document.querySelector('.search-bar button');
 
-  // Auto-filter when dropdown changes
   if (categoryEl) {
-    categoryEl.addEventListener('change', filterByGeneType);
+    categoryEl.addEventListener('change', performSearch);
   }
-
-  // Ensure the button also triggers performSearch
   if (searchBtn) {
     searchBtn.addEventListener('click', performSearch);
   }
