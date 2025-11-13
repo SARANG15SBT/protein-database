@@ -168,3 +168,36 @@ document.addEventListener('DOMContentLoaded', () => {
     searchBtn.addEventListener('click', performSearch);
   }
 });
+function reloadWithFilter() {
+  const category = document.getElementById('categorySelect').value;
+  const query = document.getElementById('searchInput').value;
+
+  // Build query string
+  const params = new URLSearchParams();
+  if (category) params.set('geneType', category);
+  if (query) params.set('q', query);
+
+  // Reload page with query string
+  window.location.search = params.toString();
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const geneType = params.get('geneType');
+  const query = params.get('q');
+
+  if (geneType) {
+    document.getElementById('categorySelect').value = geneType;
+  }
+  if (query) {
+    document.getElementById('searchInput').value = query;
+  }
+
+  // Wait until proteinData is loaded, then filter
+  const checkData = setInterval(() => {
+    if (proteinData.length > 0) {
+      clearInterval(checkData);
+      performSearch(); // reuse your existing search+filter
+    }
+  }, 200);
+});
+
